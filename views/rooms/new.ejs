@@ -4,7 +4,7 @@
   <p class="success"> <%= message %> </p>
 <% } %>
 
-<form action="/rooms" method="post">
+<form action="/rooms" method="post" enctype="multipart/form-data">
   <div>
     <label for="name-input"> Name </label>
     <input id="name-input" type="text" name="name">
@@ -13,6 +13,11 @@
   <div>
     <label for="desc-input"> Description </label>
     <input id="desc-input" type="text" name="desc">
+  </div>
+
+  <div>
+    <label for="picture-input"> Picture </label>
+    <input id="picture-input" type="file" name="picture">
   </div>
 
   <button> Add Room </button>
