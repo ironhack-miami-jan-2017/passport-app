@@ -1,2 +1,8 @@
-# lectures
-Lecture code examples for the January 2017 Ironhack Miami Web Development course.
+# Passport App
+
+Example Passport app with:
+
+- Username & password login with Passport's local strategy
+- Social logins for Facebook & Google
+- File uploads with multer
+- Environment variables to avoid publishing sensitve information
