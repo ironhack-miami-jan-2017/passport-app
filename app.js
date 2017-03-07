@@ -48,6 +48,17 @@ app.use(flash());
 app.use(passport.initialize());
 app.use(passport.session());
 
+
+passport.serializeUser((user, cb) => {
+  cb(null, user._id);
+});
+
+passport.deserializeUser((userId, cb) => {
+  User.findById(userId, (err, user) => {
+    cb(err, user);
+  });
+});
+
 passport.use(new LocalStrategy((username, password, next) => {
   User.findOne({ username }, (err, user) => {
     if (err) {
@@ -62,42 +73,52 @@ passport.use(new LocalStrategy((username, password, next) => {
   });
 }));
 
-passport.use(new FbStrategy({
-  clientID: process.env.FB_CLIENT_ID,
-  clientSecret: process.env.FB_CLIENT_SECRET,
-  callbackURL: process.env.HOST_ADDRESS + '/auth/facebook/callback'
-}, (accessToken, refreshToken, profile, done) => {
-  done(null, profile);
-}));
+passport.use(new FbStrategy(
+  {
+    clientID: process.env.FB_CLIENT_ID,
+    clientSecret: process.env.FB_CLIENT_SECRET,
+    callbackURL: process.env.HOST_ADDRESS + '/auth/facebook/callback'
+  },
+  saveSocialUser // <──◉ social login callback
+));
 
-passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: process.env.HOST_ADDRESS + '/auth/google/callback'
-}, (accessToken, refreshToken, profile, next) => {
-  next(null, profile);
-}));
+passport.use(new GoogleStrategy(
+  {
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: process.env.HOST_ADDRESS + '/auth/google/callback'
+  },
+  saveSocialUser // <──◉ social login callback
+));
 
-passport.serializeUser((user, cb) => {
-  if (user.provider) {
-    cb(null, user);
-  } else {
-    cb(null, user._id);
-  }
-});
 
-passport.deserializeUser((id, cb) => {
-  if (id.provider) {
-    cb(null, id);
-    return;
-  }
+function saveSocialUser (accessToken, refreshToken, profile, done) {
+  // See if there's a user from the provider with the given id.
+  User.findOne(
+    { provider: profile.provider, providerId: profile.id },
+    (err, userDocument) => {
+      // If there's an error or a user was retrieved, notify Passport by calling "done()".
+      if (err || userDocument) {
+        done(err, userDocument);
+        return;
+      }
 
-  User.findOne({ "_id": id }, (err, user) => {
-    if (err) { return cb(err); }
-    cb(null, user);
-  });
-});
+      // Otherwise attempt to save a new user (no username or password).
+      const names = profile.displayName.split(' ');
+      const theUser = new User({
+        firstName: names[0],
+        lastName: names.slice(1).join(' '),
+        provider: profile.provider,
+        providerId: profile.id
+      });
 
+      theUser.save((err, userDocument) => {
+        // Notify Passport about the result by calling "done()".
+        done(err, userDocument);
+      });
+    }
+  );
+}
 
 
 
